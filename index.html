@@ -1,0 +1,1107 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vẽ bằng Toán học</title>
+<style>
+  :root{
+    --bg:#070d1a; --card:#0e1830; --card2:#0b1428; --line:#1d2a46;
+    --text:#dbe4f3; --muted:#7f8cab; --accent:#9be52c; --accent-ink:#0b1a02;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--text);font:14px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;padding:16px;min-height:100%}
+  .stage{display:flex;flex-direction:column;gap:12px;min-width:0;align-self:start;position:sticky;top:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+
+  /* Formula */
+  .formula{padding:14px 16px;text-align:center;font-family:"Cambria Math","Cambria","Times New Roman",serif;color:#c3cde3}
+  .eq{font-size:22px;display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center}
+  .eq.small{font-size:16px;color:#8e9ab8;margin-top:4px}
+  .eq i{font-style:italic}
+  .sum{display:inline-flex;flex-direction:column;align-items:center;line-height:1;margin:0 2px}
+  .sum .sig{font-size:34px;line-height:.9}
+  .sum .lim{font-size:12px}
+  .int{display:inline-flex;align-items:center;font-size:26px;position:relative;padding-right:10px}
+  .int .ul,.int .ll{position:absolute;right:0;font-size:11px}
+  .int .ul{top:-2px}.int .ll{bottom:-4px}
+  .formula .cap{font:12px "Segoe UI",system-ui,sans-serif;color:var(--muted);margin-top:6px}
+
+  /* Canvas */
+  .canvas-wrap{position:relative;flex:1;min-height:420px;height:calc(100vh - 200px);overflow:hidden;background:var(--card2)}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+  .hud{position:absolute;top:10px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:baseline;pointer-events:none}
+  .hud .n{font-size:40px;font-weight:300;color:#e8eefb;letter-spacing:.5px}
+  .hud .n b{color:var(--accent);font-weight:700}
+  .hud .e{font-size:22px;color:var(--muted)}
+  .hud .e b{color:#e8eefb}
+  .status{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:rgba(10,18,36,.92);border:1px solid var(--line);
+          padding:8px 14px;border-radius:999px;color:var(--text);font-size:13px;display:none;align-items:center;gap:10px;white-space:nowrap}
+  .status.show{display:flex}
+  .drawbar{position:absolute;top:70px;left:50%;transform:translateX(-50%);display:none;gap:8px;background:rgba(10,18,36,.92);
+           border:1px solid var(--line);padding:8px;border-radius:12px}
+  .drawbar.show{display:flex}
+  .drop{position:absolute;inset:0;border:2px dashed var(--accent);border-radius:14px;display:none;align-items:center;justify-content:center;
+        background:rgba(155,229,44,.06);font-size:18px;color:var(--accent);pointer-events:none}
+  .drop.show{display:flex}
+
+  /* Panel */
+  .panel{padding:16px;display:flex;flex-direction:column;gap:14px;align-self:start;position:sticky;top:16px}
+  h1{font-size:19px;margin:0}
+  .sub{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .group{display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+  .glabel{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .btns{display:flex;flex-wrap:wrap;gap:6px}
+  button{background:#16223f;color:var(--text);border:1px solid #26365c;border-radius:9px;padding:7px 11px;font:inherit;cursor:pointer}
+  button:hover{border-color:#3a4f80;background:#1a294b}
+  button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+  button.primary:hover{filter:brightness(1.08)}
+  .row{display:flex;gap:6px}
+  input[type=text]{flex:1;min-width:0;background:#0a1226;color:var(--text);border:1px solid #26365c;border-radius:9px;padding:7px 10px;font:inherit}
+  select{background:#0a1226;color:var(--text);border:1px solid #26365c;border-radius:8px;padding:5px 6px;font:inherit;width:100%}
+  .field{display:grid;grid-template-columns:92px 1fr 52px;align-items:center;gap:8px}
+  .field.sel{grid-template-columns:92px 1fr}
+  .field span{color:#aeb9d3;font-size:13px}
+  .field output{text-align:right;font-variant-numeric:tabular-nums;color:#c9d3ea;font-size:12px}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .seg{display:grid;grid-template-columns:1fr 1fr 1fr;background:#0a1226;border:1px solid #26365c;border-radius:10px;padding:3px;gap:3px}
+  .seg button{border:0;background:transparent;padding:6px}
+  .seg button.on{background:#22335a;color:#fff}
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:13px;color:#aeb9d3}
+  .checks label{display:flex;align-items:center;gap:6px;cursor:pointer}
+  .checks input{accent-color:var(--accent)}
+  input[type=color]{width:34px;height:22px;border:0;padding:0;background:none;cursor:pointer}
+  small,.hint{color:var(--muted);font-size:12px}
+  .stats{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;padding:10px}
+    .panel{position:static}
+    .canvas-wrap{height:62vh;min-height:340px}
+    .hud .n{font-size:30px}.hud .e{font-size:17px}
+    .eq{font-size:18px}
+  }
+</style>
+</head>
+<body>
+<main>
+  <section class="stage">
+    <div class="card formula">
+      <div class="eq">
+        <span><i>z</i><sub><i>N</i></sub>(<i>t</i>) = <i>c</i><sub>0</sub> +</span>
+        <span class="sum"><span class="lim"><i>N</i></span><span class="sig">∑</span><span class="lim"><i>j</i>=1</span></span>
+        <span><i>c</i><sub><i>k<sub>j</sub></i></sub> <i>e</i><sup>2π<i>ik<sub>j</sub>t</i></sup></span>
+      </div><br>
+      <div class="eq small">
+        <span><i>c<sub>k</sub></i> =</span>
+        <span class="int">∫<span class="ul">1</span><span class="ll">0</span></span>
+        <span><i>z</i>(<i>t</i>) <i>e</i><sup>−2π<i>ikt</i></sup> <i>dt</i></span>
+      </div>
+      <div class="cap">Mỗi số hạng là một vòng tròn bán kính |c<sub>k</sub>| quay với tần số k. Các số hạng được xếp theo biên độ giảm dần.</div>
+    </div>
+
+    <div class="card canvas-wrap" id="wrap">
+      <canvas id="cv"></canvas>
+      <div class="drawbar" id="drawbar">
+        <button id="dClear">Xoá</button>
+        <button id="dCancel">Huỷ</button>
+        <button id="dDone" class="primary">Xong ✓</button>
+      </div>
+      <div class="status" id="status"></div>
+      <div class="drop" id="drop">Thả ảnh vào đây</div>
+    </div>
+  </section>
+
+  <aside class="card panel">
+    <div>
+      <h1>Vẽ bằng Toán học</h1>
+      <p class="sub">Biến bất kỳ hình nào thành tổng của N vòng tròn quay (chuỗi Fourier).</p>
+    </div>
+
+    <div class="group">
+      <div class="glabel">1 · Chọn hình</div>
+      <div class="btns">
+        <button id="btnUpload" class="primary">Tải ảnh lên</button>
+        <button id="btnDraw">Tự vẽ</button>
+      </div>
+      <div class="row">
+        <input type="text" id="txt" value="Toán học" aria-label="Chữ cần vẽ">
+        <button id="btnText">Vẽ chữ</button>
+      </div>
+      <div class="btns">
+        <button data-shape="heart">Trái tim</button>
+        <button data-shape="star">Ngôi sao</button>
+        <button data-shape="butterfly">Con bướm</button>
+      </div>
+      <small>Có thể kéo-thả hoặc dán (Ctrl+V) ảnh vào trang. Tranh nét đen trên nền trắng cho kết quả đẹp nhất.</small>
+      <input type="file" id="file" accept="image/*" hidden>
+    </div>
+
+    <div class="group">
+      <div class="glabel">2 · Tách nét từ ảnh</div>
+      <div class="field sel"><span>Kiểu ảnh</span>
+        <select id="imgMode">
+          <option value="auto">Tự động</option>
+          <option value="lineart">Tranh nét (line-art)</option>
+          <option value="canny">Ảnh chụp (dò cạnh Canny)</option>
+        </select>
+      </div>
+      <div class="field"><span id="thLabel">Ngưỡng</span><input type="range" id="th" min="1" max="99" value="50"><output id="thOut">50</output></div>
+      <div class="field"><span>Độ chi tiết</span><input type="range" id="detail" min="150" max="800" step="10" value="420"><output id="detailOut">420</output></div>
+      <div class="field sel"><span>Số điểm mẫu M</span>
+        <select id="mSel">
+          <option value="auto">Tự động</option>
+          <option>1024</option><option>2048</option><option>4096</option><option>8192</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="glabel">3 · Hoạt ảnh</div>
+      <div class="seg" id="seg">
+        <button data-mode="show" class="on" title="Mỗi bước N: vòng tròn vẽ trọn hình từ đầu đến cuối">Toàn bộ</button>
+        <button data-mode="sweep" title="N tăng liên tục, hiện cả hình">Tăng dần N</button>
+        <button data-mode="epi" title="Giữ N cố định, vòng tròn quay vẽ hình">Vòng tròn</button>
+      </div>
+      <div class="field"><span>Số bước</span><input type="range" id="steps" min="1" max="10" value="4"><output id="stepsOut">4</output></div>
+      <div class="field"><span>N (số vòng)</span><input type="range" id="nSlider" min="0" max="1000" value="0"><output id="nOut">1</output></div>
+      <div class="field"><span>Tốc độ</span><input type="range" id="speed" min="-2" max="2" step="0.1" value="0"><output id="spOut">1×</output></div>
+      <div class="btns">
+        <button id="btnPlay" class="primary">Tạm dừng</button>
+        <button id="btnRestart">Chạy lại</button>
+        <button id="btnSave">Lưu PNG</button>
+        <button id="btnRec">● Quay video</button>
+      </div>
+      <small>Quay video: chạy lại từ đầu ở chế độ “Toàn bộ” và tự tải file khi vẽ xong. Giữ tab này mở trong lúc quay.</small>
+      <div class="checks">
+        <label><input type="checkbox" id="cCircles" checked> Hiện vòng tròn</label>
+        <label><input type="checkbox" id="cJumps" checked> Ẩn đường nối</label>
+        <label><input type="checkbox" id="cOrig"> Hiện đường gốc</label>
+        <label><input type="checkbox" id="cNeon" checked> Ống neon</label>
+        <label><input type="checkbox" id="cLoop" checked> Lặp lại</label>
+        <label>Màu <input type="color" id="color" value="#9be52c"></label>
+      </div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+  </aside>
+</main>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d'), wrap = $('#wrap');
+
+/* ---------------------------------------------------------------
+   State
+----------------------------------------------------------------*/
+const S = {
+  source: null,          // {type:'image'|'text'|'shape'|'draw', ...}
+  M: 0, fft: null,
+  sx: null, sy: null,    // normalized samples z(n/M)
+  jump: null,            // jump[i]=1 → segment i→i+1 is a pen-up jump
+  ext: {w: 1, h: 1},
+  Cre: null, Cim: null, freq: null, amp: null, order: null, err: null,
+  rre: null, rim: null, reconN: -1,
+  N: 1, target: 1,
+  mode: 'show', playing: true, tau: 0, tEpi: 0, hold: 0,
+  stages: [1], stage: 0, gre: null, gim: null, hasGhost: false, recording: false,
+  speed: 1,
+  drawing: false, strokes: [], curStroke: null,
+};
+let CW = 0, CH = 0, DPR = 1;
+
+/* ---------------------------------------------------------------
+   FFT (radix-2, iterative)
+----------------------------------------------------------------*/
+function makeFFT(n) {
+  const levels = Math.round(Math.log2(n));
+  const rev = new Uint32Array(n);
+  for (let i = 0; i < n; i++) {
+    let r = 0, x = i;
+    for (let b = 0; b < levels; b++) { r = (r << 1) | (x & 1); x >>= 1; }
+    rev[i] = r;
+  }
+  const cs = new Float64Array(n / 2), sn = new Float64Array(n / 2);
+  for (let i = 0; i < n / 2; i++) { cs[i] = Math.cos(2 * Math.PI * i / n); sn[i] = Math.sin(2 * Math.PI * i / n); }
+  return function (re, im, inverse) {
+    for (let i = 0; i < n; i++) {
+      const j = rev[i];
+      if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+    }
+    const sgn = inverse ? 1 : -1;
+    for (let size = 2; size <= n; size <<= 1) {
+      const half = size >> 1, step = n / size;
+      for (let i = 0; i < n; i += size) {
+        for (let j = 0, k = 0; j < half; j++, k += step) {
+          const wr = cs[k], wi = sgn * sn[k];
+          const a = i + j, b = a + half;
+          const tr = re[b] * wr - im[b] * wi;
+          const ti = re[b] * wi + im[b] * wr;
+          re[b] = re[a] - tr; im[b] = im[a] - ti;
+          re[a] += tr; im[a] += ti;
+        }
+      }
+    }
+  };
+}
+const nextPow2 = x => Math.pow(2, Math.ceil(Math.log2(Math.max(2, x))));
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+
+/* ---------------------------------------------------------------
+   Image → stroke pixels
+----------------------------------------------------------------*/
+function grayOf(src, w, h) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d', {willReadFrequently: true});
+  g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
+  g.drawImage(src, 0, 0, w, h);
+  const d = g.getImageData(0, 0, w, h).data;
+  const gray = new Float32Array(w * h);
+  for (let i = 0, j = 0; i < gray.length; i++, j += 4) gray[i] = 0.299 * d[j] + 0.587 * d[j + 1] + 0.114 * d[j + 2];
+  return gray;
+}
+
+function otsu(gray) {
+  const hist = new Float64Array(256);
+  for (let i = 0; i < gray.length; i++) hist[gray[i] | 0]++;
+  const n = gray.length;
+  let sumAll = 0; for (let t = 0; t < 256; t++) sumAll += t * hist[t];
+  let wB = 0, sumB = 0, best = 0, thr = 128;
+  for (let t = 0; t < 256; t++) {
+    wB += hist[t]; if (!wB) continue;
+    const wF = n - wB; if (!wF) break;
+    sumB += t * hist[t];
+    const mB = sumB / wB, mF = (sumAll - sumB) / wF, v = wB * wF * (mB - mF) ** 2;
+    if (v > best) { best = v; thr = t; }
+  }
+  return thr;
+}
+
+function blur(src, w, h) {
+  const k = [1, 4, 6, 4, 1], tmp = new Float32Array(w * h), out = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let s = 0, ws = 0;
+    for (let t = -2; t <= 2; t++) { const xx = x + t; if (xx < 0 || xx >= w) continue; s += src[y * w + xx] * k[t + 2]; ws += k[t + 2]; }
+    tmp[y * w + x] = s / ws;
+  }
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let s = 0, ws = 0;
+    for (let t = -2; t <= 2; t++) { const yy = y + t; if (yy < 0 || yy >= h) continue; s += tmp[yy * w + x] * k[t + 2]; ws += k[t + 2]; }
+    out[y * w + x] = s / ws;
+  }
+  return out;
+}
+
+function canny(gray, w, h, highFrac) {
+  const b = blur(gray, w, h);
+  const mag = new Float32Array(w * h), dir = new Uint8Array(w * h);
+  let max = 0;
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+    const i = y * w + x;
+    const gx = -b[i - w - 1] - 2 * b[i - 1] - b[i + w - 1] + b[i - w + 1] + 2 * b[i + 1] + b[i + w + 1];
+    const gy = -b[i - w - 1] - 2 * b[i - w] - b[i - w + 1] + b[i + w - 1] + 2 * b[i + w] + b[i + w + 1];
+    const m = Math.hypot(gx, gy); mag[i] = m; if (m > max) max = m;
+    let a = Math.atan2(gy, gx) * 180 / Math.PI; if (a < 0) a += 180;
+    dir[i] = (a < 22.5 || a >= 157.5) ? 0 : a < 67.5 ? 1 : a < 112.5 ? 2 : 3;
+  }
+  const nms = new Float32Array(w * h);
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+    const i = y * w + x, m = mag[i]; if (!m) continue;
+    let p, q;
+    switch (dir[i]) {
+      case 0: p = mag[i - 1]; q = mag[i + 1]; break;
+      case 1: p = mag[i - w - 1]; q = mag[i + w + 1]; break;
+      case 2: p = mag[i - w]; q = mag[i + w]; break;
+      default: p = mag[i - w + 1]; q = mag[i + w - 1];
+    }
+    if (m >= p && m >= q) nms[i] = m;
+  }
+  const hi = max * highFrac, lo = hi * 0.4;
+  const out = new Uint8Array(w * h), stack = [];
+  for (let i = 0; i < w * h; i++) if (nms[i] >= hi) { out[i] = 1; stack.push(i); }
+  while (stack.length) {
+    const i = stack.pop();
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const j = i + dy * w + dx;
+      if (j >= 0 && j < w * h && !out[j] && nms[j] >= lo) { out[j] = 1; stack.push(j); }
+    }
+  }
+  return out;
+}
+
+function thinZhangSuen(bin, w, h) {
+  const del = [];
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let pass = 0; pass < 2; pass++) {
+      del.length = 0;
+      for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+        const i = y * w + x; if (!bin[i]) continue;
+        const p2 = bin[i - w], p3 = bin[i - w + 1], p4 = bin[i + 1], p5 = bin[i + w + 1],
+              p6 = bin[i + w], p7 = bin[i + w - 1], p8 = bin[i - 1], p9 = bin[i - w - 1];
+        const B = p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+        if (B < 2 || B > 6) continue;
+        const A = (p2 === 0 && p3 === 1 ? 1 : 0) + (p3 === 0 && p4 === 1 ? 1 : 0) + (p4 === 0 && p5 === 1 ? 1 : 0) +
+                  (p5 === 0 && p6 === 1 ? 1 : 0) + (p6 === 0 && p7 === 1 ? 1 : 0) + (p7 === 0 && p8 === 1 ? 1 : 0) +
+                  (p8 === 0 && p9 === 1 ? 1 : 0) + (p9 === 0 && p2 === 1 ? 1 : 0);
+        if (A !== 1) continue;
+        if (pass === 0) { if (p2 * p4 * p6 || p4 * p6 * p8) continue; }
+        else { if (p2 * p4 * p8 || p2 * p6 * p8) continue; }
+        del.push(i);
+      }
+      for (const i of del) bin[i] = 0;
+      if (del.length) changed = true;
+    }
+  }
+}
+
+function removeSmallComponents(bin, w, h, minSize) {
+  const lab = new Int32Array(w * h), stack = [], comp = [];
+  let count = 0;
+  for (let i = 0; i < w * h; i++) {
+    if (!bin[i] || lab[i]) continue;
+    comp.length = 0; stack.push(i); lab[i] = 1;
+    while (stack.length) {
+      const p = stack.pop(); comp.push(p);
+      const px = p % w, py = (p - px) / w;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const x = px + dx, y = py + dy;
+        if (x < 0 || y < 0 || x >= w || y >= h) continue;
+        const q = y * w + x;
+        if (bin[q] && !lab[q]) { lab[q] = 1; stack.push(q); }
+      }
+    }
+    if (comp.length < minSize) { for (const p of comp) bin[p] = 0; } else count++;
+  }
+  return count;
+}
+
+/* Greedy nearest-neighbour tour through all stroke pixels (grid accelerated) */
+function orderPoints(px, py, w, h) {
+  const n = px.length, CELL = 4;
+  const gw = Math.ceil(w / CELL) + 1, gh = Math.ceil(h / CELL) + 1;
+  const buckets = new Array(gw * gh);
+  for (let i = 0; i < buckets.length; i++) buckets[i] = [];
+  const bOf = new Int32Array(n), iIn = new Int32Array(n);
+  for (let i = 0; i < n; i++) {
+    const b = ((py[i] / CELL) | 0) * gw + ((px[i] / CELL) | 0);
+    bOf[i] = b; iIn[i] = buckets[b].length; buckets[b].push(i);
+  }
+  const remove = i => {
+    const B = buckets[bOf[i]], last = B.pop();
+    if (last !== i) { B[iIn[i]] = last; iIn[last] = iIn[i]; }
+  };
+  const ox = new Float64Array(n), oy = new Float64Array(n);
+  let cur = 0; remove(0); ox[0] = px[0]; oy[0] = py[0];
+  const maxR = Math.max(gw, gh);
+  for (let m = 1; m < n; m++) {
+    const x = px[cur], y = py[cur], cx = (x / CELL) | 0, cy = (y / CELL) | 0;
+    let best = -1, bd = Infinity;
+    for (let r = 0; r <= maxR; r++) {
+      const x0 = cx - r, x1 = cx + r, y0 = cy - r, y1 = cy + r;
+      for (let gy = y0; gy <= y1; gy++) {
+        if (gy < 0 || gy >= gh) continue;
+        const step = (gy === y0 || gy === y1) ? 1 : Math.max(1, x1 - x0);
+        for (let gx = x0; gx <= x1; gx += step) {
+          if (gx < 0 || gx >= gw) continue;
+          const B = buckets[gy * gw + gx];
+          for (let q = 0; q < B.length; q++) {
+            const p = B[q], dx = px[p] - x, dy = py[p] - y, d = dx * dx + dy * dy;
+            if (d < bd) { bd = d; best = p; }
+          }
+        }
+      }
+      if (best >= 0 && bd <= (r * CELL) * (r * CELL)) break;
+    }
+    remove(best); cur = best; ox[m] = px[best]; oy[m] = py[best];
+  }
+  return {xs: ox, ys: oy};
+}
+
+function processImage(src, opts) {
+  const t0 = performance.now();
+  const iw = src.naturalWidth || src.width, ih = src.naturalHeight || src.height;
+  const sc = opts.maxDim / Math.max(iw, ih);
+  const w0 = Math.max(8, Math.round(iw * sc)), h0 = Math.max(8, Math.round(ih * sc));
+  const P = 3, w = w0 + 2 * P, h = h0 + 2 * P;
+  let mode = opts.mode;
+  const thVal = opts.th;
+
+  // Analyse at (near) full resolution so thin lines survive
+  const fs = Math.min(1, 1600 / Math.max(iw, ih));
+  const fw = Math.max(8, Math.round(iw * fs)), fh = Math.max(8, Math.round(ih * fs));
+  const full = grayOf(src, fw, fh);
+  let mean = 0; for (let i = 0; i < full.length; i++) mean += full[i]; mean /= full.length;
+  const invert = mean < 110;                       // light strokes on dark background
+  if (invert) for (let i = 0; i < full.length; i++) full[i] = 255 - full[i];
+  const otsuT = otsu(full);
+
+  if (mode === 'auto') {
+    let ink = 0; for (let i = 0; i < full.length; i++) if (full[i] < otsuT) ink++;
+    mode = ink / full.length < 0.2 ? 'lineart' : 'canny';
+  }
+
+  let bin = new Uint8Array(w * h);
+  if (mode === 'lineart') {
+    const thr = clamp(otsuT + (thVal - 50) * 2.5, 1, 254);
+    // max-pool the full-res binary mask down to the working size
+    for (let y = 0; y < h0; y++) {
+      const sy0 = Math.floor(y * fh / h0), sy1 = Math.max(sy0 + 1, Math.floor((y + 1) * fh / h0));
+      for (let x = 0; x < w0; x++) {
+        const sx0 = Math.floor(x * fw / w0), sx1 = Math.max(sx0 + 1, Math.floor((x + 1) * fw / w0));
+        let ink = 0;
+        for (let yy = sy0; yy < sy1 && !ink; yy++) for (let xx = sx0; xx < sx1; xx++) if (full[yy * fw + xx] < thr) { ink = 1; break; }
+        bin[(y + P) * w + x + P] = ink;
+      }
+    }
+    removeSmallComponents(bin, w, h, 6);
+    thinZhangSuen(bin, w, h);
+  } else {
+    const small = grayOf(src, w0, h0);
+    const gray = new Float32Array(w * h).fill(255);
+    for (let y = 0; y < h0; y++) for (let x = 0; x < w0; x++) {
+      const v = small[y * w0 + x];
+      gray[(y + P) * w + x + P] = invert ? 255 - v : v;
+    }
+    const highFrac = opts.highFrac != null ? opts.highFrac : 0.03 + (100 - thVal) / 100 * 0.4;
+    bin = canny(gray, w, h, highFrac);
+  }
+  const comps = removeSmallComponents(bin, w, h, mode === 'canny' ? 10 : 5);
+
+  const pxs = [], pys = [];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (bin[y * w + x]) { pxs.push(x); pys.push(y); }
+  if (pxs.length < 10) { showStatus('Không tìm thấy nét nào — thử chỉnh Ngưỡng hoặc Kiểu ảnh.', 4000); return; }
+
+  const {xs, ys} = orderPoints(pxs, pys, w, h);
+  const n = xs.length, jA = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    if (Math.hypot(xs[j] - xs[i], ys[j] - ys[i]) > 3) jA[i] = 1;
+  }
+  buildFromPath(xs, ys, jA, {spacing: 1.2});
+  S.info = `${pxs.length.toLocaleString('vi')} điểm nét · ${comps} mảnh · ${mode === 'canny' ? 'Canny' : 'line-art'} · ${Math.round(performance.now() - t0)} ms`;
+}
+
+/* ---------------------------------------------------------------
+   Path → uniform samples → Fourier coefficients
+----------------------------------------------------------------*/
+function buildFromPath(xs, ys, jA, opts) {
+  const n = xs.length;
+  const L = new Float64Array(n);
+  let total = 0;
+  for (let i = 0; i < n; i++) { const j = (i + 1) % n; L[i] = Math.hypot(xs[j] - xs[i], ys[j] - ys[i]); total += L[i]; }
+  if (total <= 0) return;
+
+  const ms = $('#mSel').value;
+  const M = ms === 'auto' ? (opts.M || clamp(nextPow2(total / opts.spacing), 1024, 8192)) : +ms;
+  const ds = total / M;
+  const sx = new Float64Array(M), sy = new Float64Array(M), jump = new Uint8Array(M);
+  let seg = 0, segStart = 0;
+  for (let k = 0; k < M; k++) {
+    const s = k * ds;
+    while (seg < n - 1 && segStart + L[seg] < s) { segStart += L[seg]; seg++; }
+    const u = L[seg] > 0 ? clamp((s - segStart) / L[seg], 0, 1) : 0, j = (seg + 1) % n;
+    sx[k] = xs[seg] + (xs[j] - xs[seg]) * u;
+    sy[k] = ys[seg] + (ys[j] - ys[seg]) * u;
+  }
+  let a = 0;
+  for (let i = 0; i < n; i++) {
+    if (jA[i] && L[i] > 0) {
+      const k0 = Math.floor(a / ds), k1 = Math.ceil((a + L[i]) / ds) - 1;
+      for (let k = k0; k <= k1 && k - k0 < M; k++) jump[((k % M) + M) % M] = 1;
+    }
+    a += L[i];
+  }
+  // normalise to unit box centred at origin
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (let k = 0; k < M; k++) { x0 = Math.min(x0, sx[k]); x1 = Math.max(x1, sx[k]); y0 = Math.min(y0, sy[k]); y1 = Math.max(y1, sy[k]); }
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, ext = Math.max(x1 - x0, y1 - y0) || 1;
+  for (let k = 0; k < M; k++) { sx[k] = (sx[k] - cx) / ext; sy[k] = (sy[k] - cy) / ext; }
+
+  S.M = M; S.sx = sx; S.sy = sy; S.jump = jump;
+  S.ext = {w: (x1 - x0) / ext, h: (y1 - y0) / ext};
+  computeCoefficients();
+}
+
+function computeCoefficients() {
+  const M = S.M;
+  S.fft = makeFFT(M);
+  const re = Float64Array.from(S.sx), im = Float64Array.from(S.sy);
+  S.fft(re, im, false);
+  for (let k = 0; k < M; k++) { re[k] /= M; im[k] /= M; }
+  const freq = new Int32Array(M), amp = new Float64Array(M);
+  for (let k = 0; k < M; k++) { freq[k] = k <= M / 2 ? k : k - M; amp[k] = Math.hypot(re[k], im[k]); }
+  const order = new Int32Array(M - 1);
+  for (let i = 0; i < M - 1; i++) order[i] = i + 1;
+  order.sort((p, q) => amp[q] - amp[p]);
+  // relative L2 error after N terms (Parseval)
+  let total = 0; for (let k = 1; k < M; k++) total += amp[k] * amp[k];
+  const err = new Float64Array(M); err[0] = 1;
+  let rem = total;
+  for (let j = 0; j < M - 1; j++) { rem -= amp[order[j]] ** 2; err[j + 1] = total > 0 ? Math.sqrt(Math.max(rem, 0) / total) : 0; }
+  Object.assign(S, {Cre: re, Cim: im, freq, amp, order, err,
+    rre: new Float64Array(M), rim: new Float64Array(M), reconN: -1,
+    gre: new Float64Array(M), gim: new Float64Array(M)});
+  S.target = findVisualN();
+  S.reconN = -1;
+  buildStages();
+  resetAnim();
+  updateStats();
+}
+
+/* Final N = smallest N whose drawing is visually identical to the original:
+   99% of the points lie within ~1 px (1/500 of the picture size) of the target
+   path. The final error % therefore depends on the picture itself. */
+function findVisualN() {
+  const M = S.M, TOL = 1 / 500, J = S.jump;
+  const dev = new Float64Array(M);
+  const ok = N => {
+    reconstruct(N);
+    let m = 0;
+    for (let i = 0; i < M; i++) {
+      if (J[i] || J[(i + M - 1) % M]) continue;          // ignore hidden pen-up jumps
+      dev[m++] = Math.hypot(S.rre[i] - S.sx[i], S.rim[i] - S.sy[i]);
+    }
+    if (!m) return true;
+    const d = dev.subarray(0, m).sort();
+    return d[Math.floor(0.99 * (m - 1))] <= TOL;
+  };
+  let lo = 1, hi = M - 1;
+  if (ok(lo)) return Math.min(M - 1, 8);
+  while (hi - lo > 1) {                                   // binary search on N
+    const mid = (lo + hi) >> 1;
+    if (ok(mid)) hi = mid; else lo = mid;
+  }
+  return clamp(hi, Math.min(M - 1, 8), M - 1);
+}
+
+/* N values for the "full process" mode. The number of steps is fixed by the
+   "Số bước" slider (default 4), independent of how large the final N is:
+   N=13 → 4, 6, 9, 13   ·   N=600 → 12, 44, 163, 600 */
+function buildStages() {
+  const T = S.target, K = clamp(+$('#steps').value || 4, 1, 10);
+  if (K === 1 || T <= 4) { S.stages = [T]; return; }
+  const N0 = clamp(Math.round(Math.sqrt(T) / 2), 4, T);   // skip N=1 (just a circle)
+  const arr = [];
+  for (let i = 0; i < K; i++) {
+    const n = Math.round(N0 * Math.pow(T / N0, i / (K - 1)));
+    if (!arr.length || n > arr[arr.length - 1]) arr.push(n);
+  }
+  S.stages = arr;
+}
+
+function resetAnim() {
+  S.tau = 0; S.tEpi = 0; S.hold = 0; S.stage = 0; S.hasGhost = false;
+  if (S.mode === 'sweep') setN(1);
+  else if (S.mode === 'show') setN(S.stages[0]);
+  else setN(S.N < 20 ? Math.min(S.target, 120) : S.N);
+  S.playing = true; updatePlayBtn();
+}
+
+function reconstruct(N) {
+  const re = S.rre, im = S.rim;
+  re.fill(0); im.fill(0);
+  re[0] = S.Cre[0]; im[0] = S.Cim[0];
+  for (let j = 0; j < N; j++) { const b = S.order[j]; re[b] = S.Cre[b]; im[b] = S.Cim[b]; }
+  S.fft(re, im, true);
+  S.reconN = N;
+}
+
+/* ---------------------------------------------------------------
+   Sources
+----------------------------------------------------------------*/
+function imgOpts() {
+  return {mode: $('#imgMode').value, th: +$('#th').value, maxDim: +$('#detail').value};
+}
+
+function textCanvas(text) {
+  const font = 'bold 220px "Segoe UI", "Arial", sans-serif';
+  const c = document.createElement('canvas'), g = c.getContext('2d');
+  g.font = font;
+  const w = Math.ceil(g.measureText(text).width) + 80;
+  c.width = Math.max(200, w); c.height = 320;
+  g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+  g.font = font; g.fillStyle = '#000'; g.textBaseline = 'middle';
+  g.fillText(text, 40, 170);
+  return c;
+}
+
+function shapePath(name) {
+  const xs = [], ys = [];
+  if (name === 'heart') {
+    const n = 3000;
+    for (let i = 0; i < n; i++) {
+      const t = 2 * Math.PI * i / n;
+      xs.push(16 * Math.sin(t) ** 3);
+      ys.push(-(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)));
+    }
+    return {xs, ys, M: 2048};
+  }
+  if (name === 'star') {
+    const V = [];
+    for (let i = 0; i < 10; i++) { const r = i % 2 ? 0.42 : 1, a = -Math.PI / 2 + i * Math.PI / 5; V.push([r * Math.cos(a), r * Math.sin(a)]); }
+    for (let i = 0; i < 10; i++) {
+      const [ax, ay] = V[i], [bx, by] = V[(i + 1) % 10];
+      for (let s = 0; s < 200; s++) { xs.push(ax + (bx - ax) * s / 200); ys.push(ay + (by - ay) * s / 200); }
+    }
+    return {xs, ys, M: 2048};
+  }
+  // butterfly curve (Temple H. Fay)
+  const n = 16000;
+  for (let i = 0; i < n; i++) {
+    const t = 24 * Math.PI * i / n;
+    const r = Math.exp(Math.cos(t)) - 2 * Math.cos(4 * t) - Math.sin(t / 12) ** 5;
+    xs.push(Math.sin(t) * r); ys.push(-Math.cos(t) * r);
+  }
+  return {xs, ys, M: 4096};
+}
+
+function runSource() {
+  const src = S.source; if (!src) return;
+  showStatus('Đang tính toán…');
+  setTimeout(() => {
+    const t0 = performance.now();
+    try {
+      if (src.type === 'image') processImage(src.img, imgOpts());
+      else if (src.type === 'text') {
+        processImage(textCanvas(src.text), {mode: 'canny', th: 50, highFrac: 0.2, maxDim: Math.max(700, +$('#detail').value * 1.6)});
+        S.info = `Chữ “${src.text}” · ` + S.info;
+      } else if (src.type === 'shape') {
+        const p = shapePath(src.name);
+        buildFromPath(p.xs, p.ys, new Uint8Array(p.xs.length), {M: p.M, spacing: 1});
+        S.info = `Đường cong tham số · ${Math.round(performance.now() - t0)} ms`;
+      } else if (src.type === 'draw') {
+        buildFromDrawing(src.strokes);
+        S.info = `Hình tự vẽ · ${src.strokes.length} nét · ${Math.round(performance.now() - t0)} ms`;
+      }
+      updateStats();
+      hideStatus();
+    } catch (e) {
+      console.error(e);
+      showStatus('Lỗi: ' + e.message, 5000);
+    }
+  }, 30);
+}
+
+function buildFromDrawing(strokes) {
+  const xs = [], ys = [], jA = [];
+  for (const st of strokes) {
+    for (let i = 0; i < st.length; i++) { xs.push(st[i][0]); ys.push(st[i][1]); jA.push(i === st.length - 1 ? 1 : 0); }
+  }
+  const n = xs.length;
+  if (strokes.length === 1 && Math.hypot(xs[n - 1] - xs[0], ys[n - 1] - ys[0]) < 20) jA[n - 1] = 0;
+  buildFromPath(xs, ys, Uint8Array.from(jA), {spacing: 1.5});
+}
+
+function loadFile(file) {
+  if (!file || !file.type.startsWith('image/')) { showStatus('Hãy chọn một file ảnh.', 3000); return; }
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => { S.source = {type: 'image', img}; exitDraw(false); runSource(); };
+  img.onerror = () => showStatus('Không đọc được ảnh này.', 3000);
+  img.src = url;
+}
+
+/* ---------------------------------------------------------------
+   Rendering
+----------------------------------------------------------------*/
+function resize() {
+  const r = wrap.getBoundingClientRect();
+  DPR = window.devicePixelRatio || 1;
+  CW = r.width; CH = r.height;
+  // even pixel sizes keep video encoders happy
+  cv.width = Math.round(CW * DPR) & ~1; cv.height = Math.round(CH * DPR) & ~1;
+}
+
+function view() {
+  const top = 70, bottom = S.recording ? 70 : 18, side = 18;
+  const aw = CW - 2 * side, ah = CH - top - bottom;
+  const s = Math.min(aw / Math.max(S.ext.w, 1e-3), ah / Math.max(S.ext.h, 1e-3)) * 0.94;
+  return {cx: CW / 2, cy: top + ah / 2, s};
+}
+
+function hexRgb(hex) {
+  const v = parseInt(hex.slice(1), 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+}
+
+function tracePath(xa, ya, count, closed, extra, v) {
+  const hide = $('#cJumps').checked, J = S.jump;
+  ctx.beginPath();
+  let pen = false;
+  for (let i = 0; i < count; i++) {
+    const X = v.cx + xa[i] * v.s, Y = v.cy + ya[i] * v.s;
+    if (pen) ctx.lineTo(X, Y); else { ctx.moveTo(X, Y); pen = true; }
+    if (hide && J[i]) pen = false;
+  }
+  if (closed && pen && count === xa.length) ctx.lineTo(v.cx + xa[0] * v.s, v.cy + ya[0] * v.s);
+  if (extra && pen) ctx.lineTo(v.cx + extra[0] * v.s, v.cy + extra[1] * v.s);
+}
+
+function strokeNeon() {
+  const [r, g, b] = hexRgb($('#color').value);
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const k = clamp(Math.min(CW, CH) / 700, 0.6, 1.6);
+  if ($('#cNeon').checked) {
+    ctx.strokeStyle = `rgba(${r},${g},${b},0.14)`; ctx.lineWidth = 11 * k; ctx.stroke();
+    ctx.strokeStyle = `rgb(${r},${g},${b})`; ctx.lineWidth = 4.2 * k; ctx.stroke();
+    ctx.strokeStyle = '#0b1428'; ctx.lineWidth = 1.3 * k; ctx.stroke();
+  } else {
+    ctx.strokeStyle = `rgba(${r},${g},${b},0.2)`; ctx.lineWidth = 6 * k; ctx.stroke();
+    ctx.strokeStyle = `rgb(${r},${g},${b})`; ctx.lineWidth = 1.8 * k; ctx.stroke();
+  }
+}
+
+function epicycles(t, N, v) {
+  // chain of rotating vectors, largest first
+  let x = S.Cre[0], y = S.Cim[0];
+  const maxDraw = 700, drawCircles = $('#cCircles').checked;
+  const pts = [[x, y]];
+  if (drawCircles) { ctx.strokeStyle = 'rgba(200,215,255,0.16)'; ctx.lineWidth = 1; }
+  for (let j = 0; j < N; j++) {
+    const b = S.order[j], ang = 2 * Math.PI * S.freq[b] * t;
+    const c = Math.cos(ang), s = Math.sin(ang);
+    const rpx = S.amp[b] * v.s;
+    if (drawCircles && j < maxDraw && rpx > 0.6) {
+      ctx.beginPath(); ctx.arc(v.cx + x * v.s, v.cy + y * v.s, rpx, 0, 2 * Math.PI); ctx.stroke();
+    }
+    x += S.Cre[b] * c - S.Cim[b] * s;
+    y += S.Cre[b] * s + S.Cim[b] * c;
+    if (j < maxDraw) pts.push([x, y]);
+  }
+  pts.push([x, y]);
+  if (drawCircles) {
+    ctx.beginPath();
+    pts.forEach(([px, py], i) => { const X = v.cx + px * v.s, Y = v.cy + py * v.s; i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); });
+    ctx.strokeStyle = 'rgba(235,242,255,0.55)'; ctx.lineWidth = 1; ctx.stroke();
+  }
+  return [x, y];
+}
+
+function render() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.fillStyle = '#0b1428'; ctx.fillRect(0, 0, CW, CH);
+
+  if (S.drawing) { renderDrawing(); return; }
+  if (!S.M) return;
+  const v = view();
+
+  if ($('#cOrig').checked) {
+    tracePath(S.sx, S.sy, S.M, true, null, v);
+    ctx.strokeStyle = 'rgba(200,215,255,0.22)'; ctx.lineWidth = 1; ctx.stroke();
+  }
+  if (S.reconN !== S.N) reconstruct(S.N);
+
+  if (S.mode === 'sweep') {
+    tracePath(S.rre, S.rim, S.M, true, null, v);
+    strokeNeon();
+  } else {
+    // "show" mode: faint copy of the previous step for comparison
+    if (S.mode === 'show' && S.hasGhost && S.hold <= 0) {
+      const [r, g, b] = hexRgb($('#color').value);
+      tracePath(S.gre, S.gim, S.M, true, null, v);
+      ctx.strokeStyle = `rgba(${r},${g},${b},0.18)`; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    const idx = Math.min(S.M - 1, Math.floor(S.tEpi * S.M));
+    // circles first so the curve sits on top
+    const pen = epicycles(S.tEpi, S.N, v);
+    if (S.hold > 0) tracePath(S.rre, S.rim, S.M, true, null, v);
+    else tracePath(S.rre, S.rim, idx + 1, false, pen, v);
+    strokeNeon();
+    ctx.beginPath(); ctx.arc(v.cx + pen[0] * v.s, v.cy + pen[1] * v.s, 3.5, 0, 2 * Math.PI);
+    ctx.fillStyle = '#fff'; ctx.fill();
+  }
+  drawHUD();
+}
+
+function errText() {
+  const e = S.err ? S.err[S.N] * 100 : 100;
+  return (e >= 10 ? e.toFixed(1) : e.toFixed(2)) + '%';
+}
+
+/* HUD is painted on the canvas so it also appears in recorded videos */
+function drawHUD() {
+  const [r, g, b] = hexRgb($('#color').value);
+  const big = clamp(CW / 22, 26, 44), y = 12 + big;
+  ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+  ctx.font = `300 ${big}px "Segoe UI", system-ui, sans-serif`; ctx.fillStyle = '#e8eefb';
+  ctx.fillText('N = ', 18, y);
+  const w = ctx.measureText('N = ').width;
+  ctx.font = `700 ${big}px "Segoe UI", system-ui, sans-serif`; ctx.fillStyle = `rgb(${r},${g},${b})`;
+  ctx.fillText(String(S.N), 18 + w, y);
+
+  const et = errText(), es = big * 0.55;
+  ctx.textAlign = 'right';
+  ctx.font = `700 ${es}px "Segoe UI", system-ui, sans-serif`; ctx.fillStyle = '#e8eefb';
+  ctx.fillText(et, CW - 18, y);
+  const ew = ctx.measureText(et).width;
+  ctx.font = `400 ${es}px "Segoe UI", system-ui, sans-serif`; ctx.fillStyle = '#7f8cab';
+  ctx.fillText('error ', CW - 18 - ew, y);
+  ctx.textAlign = 'left';
+
+  if (S.mode === 'show') {
+    ctx.font = `400 13px "Segoe UI", system-ui, sans-serif`; ctx.fillStyle = '#7f8cab';
+    ctx.fillText(`Bước ${S.stage + 1}/${S.stages.length}`, 20, y + 20);
+  }
+  if (S.recording) drawFormula(CW / 2, CH - 26);
+}
+
+/* z_N(t) = c_0 + Σ_{j=1}^{N} c_{k_j} e^{2πik_j t}, drawn with canvas text */
+function drawFormula(cx, y) {
+  const fs = clamp(CW / 40, 15, 24), sub = fs * 0.62;
+  const parts = [
+    ['z', 0], ['N', -1], ['(t) = c', 0], ['0', -1], [' + ', 0], ['Σ', 2], [['N', 'j=1'], 3],
+    [' c', 0], ['k', -1], ['j', -2], [' e', 0], ['2πik', 1], ['j', 4], ['t', 1],
+  ];
+  const fontFor = k => k === 0 ? `italic ${fs}px "Cambria Math", Cambria, "Times New Roman", serif`
+    : k === 2 ? `${fs * 1.5}px "Cambria Math", Cambria, serif`
+    : `italic ${k === -2 || k === 4 ? sub * 0.8 : sub}px "Cambria Math", Cambria, "Times New Roman", serif`;
+  const widthOf = ([t, k]) => {
+    ctx.font = fontFor(k === 3 ? 1 : k);
+    return k === 3 ? Math.max(ctx.measureText(t[0]).width, ctx.measureText(t[1]).width) + 2 : ctx.measureText(t).width;
+  };
+  let total = 0; for (const p of parts) total += widthOf(p);
+  let x = cx - total / 2;
+  ctx.fillStyle = '#c3cde3'; ctx.textBaseline = 'alphabetic';
+  for (const p of parts) {
+    const [t, k] = p, w = widthOf(p);
+    ctx.font = fontFor(k === 3 ? 1 : k);
+    if (k === 3) { ctx.fillText(t[0], x, y - fs * 0.75); ctx.fillText(t[1], x, y + fs * 0.35); }
+    else {
+      const dy = k === -1 ? fs * 0.25 : k === -2 ? fs * 0.38 : k === 1 ? -fs * 0.45 : k === 4 ? -fs * 0.3 : k === 2 ? fs * 0.12 : 0;
+      ctx.fillText(t, x, y + dy);
+    }
+    x += w;
+  }
+}
+
+function renderDrawing() {
+  const [r, g, b] = hexRgb($('#color').value);
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.strokeStyle = `rgb(${r},${g},${b})`; ctx.lineWidth = 2.5;
+  for (const st of S.strokes) {
+    ctx.beginPath();
+    st.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+    ctx.stroke();
+  }
+  if (!S.strokes.length) {
+    ctx.fillStyle = '#7f8cab'; ctx.font = '16px "Segoe UI", sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Vẽ bằng chuột hoặc ngón tay — có thể vẽ nhiều nét', CW / 2, CH / 2);
+    ctx.textAlign = 'start';
+  }
+}
+
+/* ---------------------------------------------------------------
+   Animation loop
+----------------------------------------------------------------*/
+const SWEEP_DUR = 26, EPI_DUR = 14, HOLD = 2.5, STAGE_DUR = 4.2, STAGE_HOLD = 1.2, FINAL_HOLD = 3.5;
+let lastT = performance.now();
+
+function tickShow(dt) {
+  const last = S.stages.length - 1;
+  if (S.hold > 0) {
+    S.hold -= dt * Math.max(1, S.speed);
+    if (S.hold > 0) return;
+    S.hold = 0;
+    if (S.stage < last) {
+      S.gre.set(S.rre); S.gim.set(S.rim); S.hasGhost = true;   // remember previous step
+      S.stage++; S.tEpi = 0; setN(S.stages[S.stage]);
+    } else if (S.recording) {
+      stopRecording(); S.playing = false; S.hold = 1e-9; updatePlayBtn();
+    } else if ($('#cLoop').checked) {
+      resetAnim();
+    } else { S.playing = false; S.hold = 1e-9; updatePlayBtn(); }
+    return;
+  }
+  // drawing one full turn: from t = 0 (start) to t = 1 (end)
+  S.tEpi += dt * S.speed / STAGE_DUR;
+  if (S.tEpi >= 1) { S.tEpi = 0.999999; S.hold = S.stage === last ? FINAL_HOLD : STAGE_HOLD; }
+}
+
+function tick(now) {
+  const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+  if (S.M && S.playing && !S.drawing && S.mode === 'show') tickShow(dt);
+  else if (S.M && S.playing && !S.drawing) {
+    if (S.hold > 0) {
+      S.hold -= dt;
+      if (S.hold <= 0) {
+        S.hold = 0;
+        if ($('#cLoop').checked) { S.tau = 0; S.tEpi = 0; if (S.mode === 'sweep') setN(1); }
+        else { S.playing = false; updatePlayBtn(); if (S.mode === 'epi') S.hold = 1e-9; }
+      }
+    } else if (S.mode === 'sweep') {
+      S.tau += dt * S.speed / SWEEP_DUR;
+      if (S.tau >= 1) { S.tau = 1; S.hold = HOLD; }
+      setN(Math.max(1, Math.round(Math.pow(S.target, S.tau))));
+    } else {
+      S.tEpi += dt * S.speed / EPI_DUR;
+      if (S.tEpi >= 1) { S.tEpi = 0.999999; S.hold = HOLD; }
+    }
+  }
+  render();
+  requestAnimationFrame(tick);
+}
+
+/* ---------------------------------------------------------------
+   UI
+----------------------------------------------------------------*/
+const nToSlider = N => S.M > 2 ? Math.round(1000 * Math.log(N) / Math.log(S.M - 1)) : 0;
+const sliderToN = v => S.M > 2 ? clamp(Math.round(Math.exp(v / 1000 * Math.log(S.M - 1))), 1, S.M - 1) : 1;
+
+function setN(N) {
+  N = clamp(N | 0, 1, Math.max(1, S.M - 1));
+  S.N = N;
+  $('#nOut').textContent = N;
+  $('#nSlider').value = nToSlider(N);
+}
+
+function updateStats() {
+  $('#stats').innerHTML = S.M ? `${S.info || ''}<br>M = ${S.M} mẫu · tối đa ${S.M - 1} vòng tròn <br>N cuối = ${S.target} (hình vẽ lại lệch &lt; 1 px so với gốc) · sai số cuối ${(S.err[S.target] * 100).toFixed(2)}%<br>Các bước: N = ${S.stages.join(' → ')}` : '';
+}
+function updatePlayBtn() { $('#btnPlay').textContent = S.playing ? 'Tạm dừng' : 'Phát'; }
+
+let statusTimer = 0;
+function showStatus(msg, ms) {
+  const el = $('#status'); el.textContent = msg; el.classList.add('show');
+  clearTimeout(statusTimer);
+  if (ms) statusTimer = setTimeout(hideStatus, ms);
+}
+function hideStatus() { $('#status').classList.remove('show'); }
+
+function setMode(m) {
+  S.mode = m;
+  document.querySelectorAll('#seg button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+  if (S.M) resetAnim();
+}
+
+function syncThLabel() {
+  const m = $('#imgMode').value;
+  $('#thLabel').textContent = m === 'canny' ? 'Độ nhạy' : m === 'lineart' ? 'Ngưỡng tối' : 'Ngưỡng';
+}
+
+// Drawing mode
+function enterDraw() {
+  S.drawing = true; S.strokes = []; S.curStroke = null;
+  $('#drawbar').classList.add('show');
+}
+function exitDraw(apply) {
+  if (!S.drawing) return;
+  S.drawing = false; $('#drawbar').classList.remove('show');
+  if (apply) {
+    const pts = S.strokes.reduce((a, s) => a + s.length, 0);
+    if (pts < 8) { showStatus('Hình vẽ quá ngắn.', 2500); S.drawing = true; $('#drawbar').classList.add('show'); return; }
+    S.source = {type: 'draw', strokes: S.strokes.map(s => s.slice())};
+    runSource();
+  }
+}
+const canvasPt = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+cv.addEventListener('pointerdown', e => {
+  if (!S.drawing) return;
+  cv.setPointerCapture(e.pointerId);
+  S.curStroke = [canvasPt(e)]; S.strokes.push(S.curStroke);
+});
+cv.addEventListener('pointermove', e => {
+  if (!S.drawing || !S.curStroke) return;
+  const p = canvasPt(e), q = S.curStroke[S.curStroke.length - 1];
+  if (Math.hypot(p[0] - q[0], p[1] - q[1]) > 1.5) S.curStroke.push(p);
+});
+const endStroke = () => { if (S.curStroke && S.curStroke.length < 2) S.strokes.pop(); S.curStroke = null; };
+cv.addEventListener('pointerup', endStroke);
+cv.addEventListener('pointercancel', endStroke);
+
+$('#btnDraw').onclick = enterDraw;
+$('#dDone').onclick = () => exitDraw(true);
+$('#dCancel').onclick = () => exitDraw(false);
+$('#dClear').onclick = () => { S.strokes = []; };
+
+$('#btnUpload').onclick = () => $('#file').click();
+$('#file').onchange = e => { loadFile(e.target.files[0]); e.target.value = ''; };
+$('#btnText').onclick = () => { const t = $('#txt').value.trim(); if (!t) return; exitDraw(false); S.source = {type: 'text', text: t}; runSource(); };
+$('#txt').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnText').click(); });
+document.querySelectorAll('[data-shape]').forEach(b => b.onclick = () => { exitDraw(false); S.source = {type: 'shape', name: b.dataset.shape}; runSource(); });
+document.querySelectorAll('#seg button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+
+let reTimer = 0;
+const rerunSoon = () => { clearTimeout(reTimer); reTimer = setTimeout(() => { if (S.source && S.source.type === 'image') runSource(); }, 250); };
+$('#imgMode').onchange = () => { syncThLabel(); rerunSoon(); };
+$('#th').oninput = e => { $('#thOut').textContent = e.target.value; rerunSoon(); };
+$('#detail').oninput = e => { $('#detailOut').textContent = e.target.value; rerunSoon(); };
+$('#mSel').onchange = () => { if (S.source) runSource(); };
+
+$('#nSlider').oninput = e => {
+  if (!S.M) return;
+  if (S.mode === 'show') { setMode('epi'); }   // picking N by hand → fixed-N circle mode
+  setN(sliderToN(+e.target.value));
+  if (S.mode === 'sweep') { S.playing = false; S.hold = 0; S.tau = Math.log(Math.max(1, S.N)) / Math.log(S.target); updatePlayBtn(); }
+};
+$('#steps').oninput = e => {
+  $('#stepsOut').textContent = e.target.value;
+  if (!S.M) return;
+  buildStages(); updateStats();
+  if (S.mode === 'show') resetAnim(); else setMode('show');
+};
+$('#speed').oninput = e => { S.speed = Math.pow(2, +e.target.value); $('#spOut').textContent = (S.speed < 1 ? S.speed.toFixed(2) : S.speed.toFixed(1)).replace(/\.?0+$/, '') + '×'; };
+$('#btnPlay').onclick = () => {
+  if (!S.playing && S.mode === 'sweep' && S.tau >= 1) { S.tau = 0; setN(1); }
+  if (!S.playing && S.mode === 'epi' && S.hold > 0) { S.hold = 0; S.tEpi = 0; }
+  if (!S.playing && S.mode === 'show' && S.hold > 0 && S.stage === S.stages.length - 1) { resetAnim(); return; }
+  S.playing = !S.playing; updatePlayBtn();
+};
+$('#btnRestart').onclick = () => { if (S.M) resetAnim(); };
+
+/* Record the whole process (all steps, start → end) to a video file */
+let recorder = null, recChunks = [], recType = '';
+function startRecording() {
+  if (!S.M) return;
+  if (!window.MediaRecorder || !cv.captureStream) { showStatus('Trình duyệt không hỗ trợ quay video — hãy dùng Chrome/Edge.', 4000); return; }
+  recType = ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+  S.recording = true;
+  setMode('show');
+  recorder = new MediaRecorder(cv.captureStream(60), recType ? {mimeType: recType, videoBitsPerSecond: 10e6} : {});
+  recChunks = [];
+  recorder.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
+  recorder.onstop = () => {
+    const blob = new Blob(recChunks, {type: recType || 'video/webm'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `fourier-drawing.${recType.includes('mp4') ? 'mp4' : 'webm'}`;
+    a.click();
+    S.recording = false; $('#btnRec').textContent = '● Quay video';
+    showStatus('Đã lưu video ✓', 3000);
+  };
+  recorder.start(500);
+  $('#btnRec').textContent = '■ Dừng quay';
+  showStatus('● Đang quay — video sẽ tự lưu khi vẽ xong');
+}
+function stopRecording() { if (recorder && recorder.state !== 'inactive') recorder.stop(); }
+$('#btnRec').onclick = () => S.recording ? stopRecording() : startRecording();
+$('#btnSave').onclick = () => {
+  cv.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `fourier-N${S.N}.png`; a.click(); });
+};
+
+// drag & drop / paste
+let dragDepth = 0;
+document.addEventListener('dragenter', e => { e.preventDefault(); dragDepth++; $('#drop').classList.add('show'); });
+document.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; $('#drop').classList.remove('show'); } });
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault(); dragDepth = 0; $('#drop').classList.remove('show');
+  loadFile(e.dataTransfer.files[0]);
+});
+document.addEventListener('paste', e => {
+  for (const it of e.clipboardData.items) if (it.type.startsWith('image/')) { loadFile(it.getAsFile()); return; }
+});
+
+window.addEventListener('resize', resize);
+resize();
+syncThLabel();
+S.source = {type: 'text', text: $('#txt').value};
+runSource();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

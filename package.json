@@ -1,0 +1,9 @@
+{
+  "name": "drawing-by-math",
+  "version": "1.0.0",
+  "description": "Vẽ hình bằng chuỗi Fourier (epicycles)",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  }
+}
